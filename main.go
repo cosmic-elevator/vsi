@@ -89,9 +89,21 @@ func addChapter(e *epub.Epub, chapterFileName string) error {
 		joinedCss += string(cssData)
 	}
 
-	// Add the combined CSS file to the EPUB
-	epubCSSPath, err := e.AddCSS(joinedCss, "")
+	// Make and add the combined CSS file to the EPUB
+	joinedCssFilename, err := os.Create("joined-css.css")
 
+	if err != nil {
+		return fmt.Errorf("could not make joined CSS file: %v", err)
+	}
+
+	defer joinedCssFilename.Close()
+
+	_, err = joinedCssFilename.WriteString(joinedCss)
+	epubCSSPath, err := e.AddCSS("joined-css.css", "css.css")
+
+	// -------- need to review the code below --------
+
+	
 	// Open the chapter HTML file
 	file, err := os.Open(chapterFileName)
 
