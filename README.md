@@ -7,7 +7,7 @@
 **You must have a valid VSI subscription through your institution to use this program. Generated books are for personal use only.**
 
 ## Installation
-1. `go get github.com/cosmic_elevator/vsi`
+1. `go install github.com/cosmic-elevator/vsi@latest`
 
 ## Usage
 
