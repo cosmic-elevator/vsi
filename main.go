@@ -50,10 +50,10 @@ func createEpub(inputFolder string,
 	}
 
 	// Add each chapter to the EPUB
-	for i, chapter := range allChapters {
+	for _, chapter := range allChapters {
 		log.Printf("Formatting chapter %v\n", chapter)
 
-		err = addChapter(e, chapter, i+1)
+		err = addChapter(e, chapter)
 
 		if err != nil {
 			return err
