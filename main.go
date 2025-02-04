@@ -50,10 +50,10 @@ func createEpub(inputFolder string,
 	}
 
 	// Add each chapter to the EPUB
-	for _, chapter := range allChapters {
+	for i, chapter := range allChapters {
 		log.Printf("Formatting chapter %v\n", chapter)
 
-		err = addChapter(e, chapter)
+		err = addChapter(e, chapter, i+1)
 
 		if err != nil {
 			return err
@@ -65,7 +65,7 @@ func createEpub(inputFolder string,
 }
 
 // addChapter adds a chapter to an existing EPUB by loading a HTML file from the given filename
-func addChapter(e *epub.Epub, chapterFileName string) error {
+func addChapter(e *epub.Epub, chapterFileName string, i int) error {
 	// Since addChapter is given the filename of the HTML file, create the directory path for the corresponding files
 	// e.g. CSS and images
 	chapterFilesPath := strings.Replace(chapterFileName, ".html", "_files/", -1)
@@ -90,29 +90,28 @@ func addChapter(e *epub.Epub, chapterFileName string) error {
 	}
 
 	// Make and add the combined CSS file to the EPUB
-	joinedCssFilename, err := os.Create("joined-css.css")
+	joinedCssFile, err := os.Create("joined-css.css")
 
 	if err != nil {
 		return fmt.Errorf("could not make joined CSS file: %v", err)
 	}
 
-	defer joinedCssFilename.Close()
+	defer joinedCssFile.Close()
 
-	_, err = joinedCssFilename.WriteString(joinedCss)
+	_, err = joinedCssFile.WriteString(joinedCss)
 
 	if err != nil {
 		return fmt.Errorf("could not write CSS content in the file: %v", err)
 	}
 
-	epubCSSPath, err := e.AddCSS("joined-css.css", "css.css")
+	epubCSSPath, err := e.AddCSS("joined-css.css", "joined-css-"+string(i)+".css")
 
 	if err != nil {
 		return fmt.Errorf("could not add css file into epub: %v", err)
 	}
 
-	// -------- need to review the code below --------
 
-	
+
 	// Open the chapter HTML file
 	file, err := os.Open(chapterFileName)
 
@@ -128,14 +127,12 @@ func addChapter(e *epub.Epub, chapterFileName string) error {
 	}
 
 	// Extract the chapter title from the document.
-	// It will be in the format "p. XXX. Chapter Name" or "p. XXXChapter Name".
 	var chapterTitle string
-	doc.Find(".chapTitle").Each(func(i int, s *goquery.Selection) {
-		// Clear page number and chapter number
-		chapterTitle = regexp.MustCompile(`p. \d*. (.*)`).ReplaceAllString(s.Text(), "$1")
+	doc.Find(".chapter-title-without-label").Each(func(i int, s *goquery.Selection) {
+		// Clear span tag and get chapter title
+		s.Find("span").Remove()
+		chapterTitle = s.Text()
 
-		// Clear just chapter number
-		chapterTitle = regexp.MustCompile(`p. \d+([a-zA-Z]+)`).ReplaceAllString(chapterTitle, "$1")
 	})
 
 	// fileMap associates original image file names (as downloaded from the web page) with generated image names
@@ -144,9 +141,9 @@ func addChapter(e *epub.Epub, chapterFileName string) error {
 
 	// Extract the chapter content from the HTML (found under the div with class `chunkBody`)
 	var readerError error
-	doc.Find(".chunkBody").Each(func(i int, s *goquery.Selection) {
+	doc.Find(".widget-items").Each(func(i int, s *goquery.Selection) {
 		// Add chapter header
-		s.PrependHtml("<h1>" + chapterTitle + "</h1>")
+		s.PrependHtml("<h2>" + chapterTitle + "</h2>")
 
 		// Read all HTML from the content div
 		chapterHtml, err := s.Html()
@@ -166,8 +163,8 @@ func addChapter(e *epub.Epub, chapterFileName string) error {
 
 			// Create a full path to the image file in the local filesystem
 			unescapedImageFileName := filepath.Dir(chapterFileName) + "/" + strings.Replace(html.UnescapeString(imageName), "%20", " ", -1)
-
-			// Add the image to the EPUB, getting a unique generated name
+			//fmt.Printf(unescapedImageFileName+"\n")
+			//Add the image to the EPUB, getting a unique generated name
 			imageEpubFilename, err := e.AddImage(unescapedImageFileName, "")
 
 			if err != nil {
@@ -179,6 +176,8 @@ func addChapter(e *epub.Epub, chapterFileName string) error {
 			fileMap[imageName] = imageEpubFilename
 		})
 
+		chapterHtml = html.UnescapeString(chapterHtml)
+
 		// For each image in the document, replace original paths with the new intra-EPUB path
 		for originalSrc, newSrc := range fileMap {
 			chapterHtml = strings.Replace(chapterHtml, originalSrc, newSrc, -1)
@@ -187,13 +186,22 @@ func addChapter(e *epub.Epub, chapterFileName string) error {
 		// Run a series of deletions on the HTML:
 		// - delete navigation links
 		// - delete page references
+		// - delete page number
+		// - delete download all slides button
+		// - delete download image button
 		deleteNavRegex := regexp.MustCompile(`<ul class="div1-nav">.*<\/ul>`)
-		deletePageRefRegex := regexp.MustCompile(`<span id="\w*" class="printPage">p\. \d*<\/span>`)
+		deletePageRefRegex := regexp.MustCompile(`<span id="\w*" class="page-number-prefix js-page-prefix  ">p\. \d*<\/span>`)
+		deletePageNumber := regexp.MustCompile(`<span class=" page-span".*</span>`)
 		deletePageRefIconRegex := regexp.MustCompile(`<span title="\w*" class="printPageMark">↵<\/span>`)
+		deleteImgButtonRegex := regexp.MustCompile(`<div class="ajax-articleAbstract-exclude-regex fig-orig original-slide figure-button-wrap">.*<\/div>`)
+		deleteDownloadAllSlides := regexp.MustCompile(`<a id="lnkDownloadAllImages".*</a>`)
 
 		chapterHtml = deleteNavRegex.ReplaceAllString(chapterHtml, "")
 		chapterHtml = deletePageRefRegex.ReplaceAllString(chapterHtml, "")
 		chapterHtml = deletePageRefIconRegex.ReplaceAllString(chapterHtml, "")
+		chapterHtml = deleteImgButtonRegex.ReplaceAllString(chapterHtml, "")
+		chapterHtml = deleteDownloadAllSlides.ReplaceAllString(chapterHtml, "")
+		chapterHtml = deletePageNumber.ReplaceAllString(chapterHtml, "")
 
 		// Create the filename for the chapter based on title
 		chapterEpubFilename := strings.Replace(chapterTitle, "?", "", -1) + ".chapterHtml"

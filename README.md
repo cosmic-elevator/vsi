@@ -1,18 +1,18 @@
-**I'm currently maintaining this project, so it would not run properly now.**
-
 # VSI
+
+### This project is a fork of kdelwat's project, I fixed some bugs and made some changes to work properly on newer vsi page.
 
 *Very Short Introduction* is a series of books from Oxford University Press that are available via a subscription service. However, since these books are only available in HTML, this program converts them to Kindle-compatible ebooks for easier reading.
 
 **You must have a valid VSI subscription through your institution to use this program. Generated books are for personal use only.**
 
 ## Installation
-1. `go get github.com/kdelwat/vsi`
+1. `go get github.com/cosmic_elevator/vsi`
 
 ## Usage
 
 1. Create a new directory for the book you are creating (e.g. "VSI Weather")
-2. Download each chapter of the book as HTML (complete webpage). This step can't be automated as a subscription log-in is required. It doesn't matter what the chapter files are named, as long as they end in `.html`, and are in order (this will occur by default thanks to the website URLs). Your directory should look like this:
+2. Download each chapter of the book as HTML (complete webpage). This step can't be automated as a subscription log-in is required. You should add a number sequentially to preserve the order of your files. Your directory should look like this:
 
 ```
 1. Introduction - Very Short Introductions_files
