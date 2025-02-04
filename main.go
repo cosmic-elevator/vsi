@@ -99,7 +99,16 @@ func addChapter(e *epub.Epub, chapterFileName string) error {
 	defer joinedCssFilename.Close()
 
 	_, err = joinedCssFilename.WriteString(joinedCss)
+
+	if err != nil {
+		return fmt.Errorf("could not write CSS content in the file: %v", err)
+	}
+
 	epubCSSPath, err := e.AddCSS("joined-css.css", "css.css")
+
+	if err != nil {
+		return fmt.Errorf("could not add css file into epub: %v", err)
+	}
 
 	// -------- need to review the code below --------
 
