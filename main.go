@@ -65,7 +65,7 @@ func createEpub(inputFolder string,
 }
 
 // addChapter adds a chapter to an existing EPUB by loading a HTML file from the given filename
-func addChapter(e *epub.Epub, chapterFileName string, i int) error {
+func addChapter(e *epub.Epub, chapterFileName string) error {
 	// Since addChapter is given the filename of the HTML file, create the directory path for the corresponding files
 	// e.g. CSS and images
 	chapterFilesPath := strings.Replace(chapterFileName, ".html", "_files/", -1)
@@ -104,7 +104,7 @@ func addChapter(e *epub.Epub, chapterFileName string, i int) error {
 		return fmt.Errorf("could not write CSS content in the file: %v", err)
 	}
 
-	epubCSSPath, err := e.AddCSS("joined-css.css", "joined-css-"+string(i)+".css")
+	epubCSSPath, err := e.AddCSS("joined-css.css", "")
 
 	if err != nil {
 		return fmt.Errorf("could not add css file into epub: %v", err)
