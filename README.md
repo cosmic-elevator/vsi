@@ -1,3 +1,5 @@
+**I'm currently maintaining this project, so it would not run properly now.**
+
 # VSI
 
 *Very Short Introduction* is a series of books from Oxford University Press that are available via a subscription service. However, since these books are only available in HTML, this program converts them to Kindle-compatible ebooks for easier reading.
